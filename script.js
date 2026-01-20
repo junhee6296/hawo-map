@@ -487,19 +487,22 @@ fetch(pointsUrl)
               parseFloat(c[2]?.v) || 0,
               parseFloat(c[1]?.v) || 0
             ]
-          },
-          properties: {
-            type: c[3]?.v || '',
-            name: c[4]?.v || '',
-            adrs: c[5]?.v || '',
-            stdnt_cnt: c[6]?.v || '-',
-            stdnt_per_cl: c[7]?.v || '-',
-            tchr_cnt: c[8]?.v || '-',
-            stdnt_per_tchr: c[9]?.v || '-',
-            shape: c[10]?.v || '⬤',
-            color: c[11]?.v || '#333',
+          }, 
+          properties: {  // 이 부분에서 구글 시트 값을 json 데이터로 변환함. 시트 열을 중간에 삽입하면 순서 바뀌어서 데이터 꼬임
+            type: c[3]?.v || '', // 학교급(초중고특)
+            name: c[4]?.v || '', // 학교명
+            adrs: c[5]?.v || '', // 주소
+            stdnt_cnt: c[6]?.v || '-', // 학생수
+            stdnt_per_cl: c[7]?.v || '-', // 학급당 학생수
+            tchr_cnt: c[8]?.v || '-', // 교사수
+            stdnt_per_tchr: c[9]?.v || '-', // 교사1인당 학생수
+            shape: c[10]?.v || '⬤', // 마커모양
+            color: c[11]?.v || '#333', // 마커색상
+            url: c[13]?.v || '', // 홈페이지URL
+            class_cnt: c[14]?.v || '-', // 학급수
           }
         };
+
       }).filter(feature => {
         // 유효한 좌표가 있는 항목만 필터링
         return feature.geometry.coordinates[0] !== 0 && feature.geometry.coordinates[1] !== 0;
@@ -536,34 +539,43 @@ fetch(pointsUrl)
         marker.labelMarker = labelMarker;  // 마커에 라벨 참조 저장
         markers.push(marker);      // 배열에 마커 저장
         
-        return marker;
+        return marker; // 마커 반환
       },
-      onEachFeature: function (feature, layer) {
+      onEachFeature: function (feature, layer) { //팝업 내용 설정
         const p = feature.properties;
         let popup = `<div class="custom-popup">`;
-        if (p.type) popup += `<span class="popup-type"style="color:${p.color}">${p.type}</span>`;
-        if (p.name) popup += `<span class="popup-name">${p.name}</span><br>`;
-        if (p.adrs) popup += `<span class="popup-adrs">${p.adrs}</span>`;
-        popup += `<hr style="border: solid 0.5px #dedede; "></hr>`;
-        if (p.phone) popup += `<span class="popup-phone"><b style="font-weight: 700; font-size: 90%; position: relative; top: -1px">• 연락처</b> ${p.phone}</span>`;
-        if (p.stdnt_cnt) popup += `<span class="popup-time"><b style="font-weight: 700; font-size: 90%; position: relative; top: -1px">• 학생 수</b> ${p.stdnt_cnt}</span>`;
-        if (p.stdnt_per_cl) popup += `<span class="popup-time"><b style="font-weight: 700; font-size: 90%; position: relative; top: -1px">• 학급당 학생 수</b> ${p.stdnt_per_cl}</span>`;
-        if (p.tchr_cnt) popup += `<span class="popup-time"><b style="font-weight: 700; font-size: 90%; position: relative; top: -1px">• 교사 수</b> ${p.tchr_cnt}</span>`;
-        if (p.stdnt_per_tchr) popup += `<span class="popup-time"><b style="font-weight: 700; font-size: 90%; position: relative; top: -1px">• 교사 1인당 학생 수</b> ${p.stdnt_per_tchr}</span>`;
-        popup += `<button class="popup-more" data-type="${p.type}">더보기</button><br>`;
+        if (p.type) popup += `<span class="popup-type"style="color:${p.color}">${p.type}</span>`; // 타입을 색상과 함께 표시
+        if (p.name) popup += `<span class="popup-name">${p.name}</span><br>`; // 학교명
+        if (p.adrs) popup += `<span class="popup-adrs">${p.adrs}</span>`; // 주소
+        popup += `<hr style="border: solid 0.5px #dedede; "></hr>`; // 테두리
+        if (p.phone) popup += `<span class="popup-phone"><b style="font-weight: 700; font-size: 90%; position: relative; top: -1px">• 연락처</b> ${p.phone}</span>`; // 전화번호
+        if (p.stdnt_cnt) popup += `<span class="popup-time"><b style="font-weight: 700; font-size: 90%; position: relative; top: -1px">• 학생 수</b> ${p.stdnt_cnt}</span>`; // 학생수
+        if (p.class_cnt) popup += `<span class="popup-time"><b style="font-weight: 700; font-size: 90%; position: relative; top: -1px">• 학급 수</b> ${p.class_cnt}</span>`; // 학급수
+        if (p.stdnt_per_cl) popup += `<span class="popup-time"><b style="font-weight: 700; font-size: 90%; position: relative; top: -1px">• 학급당 학생 수</b> ${p.stdnt_per_cl}</span>`; // 학급당 학생수
+        if (p.tchr_cnt) popup += `<span class="popup-time"><b style="font-weight: 700; font-size: 90%; position: relative; top: -1px">• 교사 수</b> ${p.tchr_cnt}</span>`; // 교사수
+        if (p.stdnt_per_tchr) popup += `<span class="popup-time"><b style="font-weight: 700; font-size: 90%; position: relative; top: -1px">• 교사 1인당 학생 수</b> ${p.stdnt_per_tchr}</span>`; // 교사1인당 학생수
+        popup += `<button class="popup-more" data-type="${p.type}" data-url="${p.url}">홈페이지로 가기</button><br>`; // 홈페이지 링크 버튼
         popup += `</div>`;
         layer.bindPopup(popup);
 
-        layer.on('popupopen', () => {
-          const btn = document.querySelector('.popup-more');
-          if (btn) {
-            btn.addEventListener('click', () => {
-              const type = btn.dataset.type;
+        layer.on('popupopen', () => { // 홈페이지 버튼 클릭 이벤트 처리
+        const btn = document.querySelector('.popup-more');
+        if (btn) {
+          btn.addEventListener('click', () => {
+            const type = btn.dataset.type;
+            const url = btn.dataset.url; // 여기서 URL을 가져옵니다.
+
+            if (url && url !== '') {
+              // 1. URL이 있다면 새 창으로 이동
+              window.open(url, '_blank');
+            } else {
+              // 2. URL이 없다면 기존처럼 타입 정보 보여주기
               const { trgt, desc, serv, fee } = legendMap[type] || {};
               showTypeInfo(type, trgt, desc, serv, fee);
-            });
-          }
-        });
+            }
+    });
+  }
+});
       }
     }).addTo(map);
     
